@@ -9,9 +9,9 @@ import { Provider } from 'react-redux';
 import { createStore } from 'redux';
 import { renderRoutes } from 'react-router-config';
 import { StaticRouter } from 'react-router-dom';
-import serverRoutes from '../frontend/routes/serverRoutes';
 import reducer from '../frontend/reducers';
 import initialState from '../frontend/initialState';
+import serverRoutes from '../frontend/routes/serverRoutes';
 import getManifest from './getManifest';
 
 dotenv.config();
@@ -43,25 +43,26 @@ if (ENV === 'development') {
 const setResponse = (html, preloadedState, manifest) => {
   const mainStyles = manifest ? manifest['main.css'] : 'assets/app.css';
   const mainBuild = manifest ? manifest['main.js'] : 'assets/app.js';
-  const vendorBuild = manifest ? manifest['vendors.js'] : 'assets/vendor.js';
 
-  return (`
+  return `
   <!DOCTYPE html>
-  <html>
-    <head>
-      <link rel="stylesheet" href="${mainStyles}" type="text/css">
-      <title>Platzi Video</title>
-    </head>
-    <body>
-      <div id="app">${html}</div>
-      <script>
-        window.__PRELOADED_STATE__ = ${JSON.stringify(preloadedState).replace(/</g, '\\u003c')}
-      </script>
-      <script src="${mainBuild}" type="text/javascript"></script>
-      <script src="${vendorBuild}" type="text/javascript"></script>
-    </body>
-  </html>
-  `);
+    <html>
+      <head>
+        <link rel="stylesheet" href="${mainStyles}" type="text/css">
+        <title>Platzi Video</title>
+      </head>
+      <body>
+        <div id="app">${html}</div>
+        <script>
+        window.__PRELOADED_STATE__ = ${JSON.stringify(preloadedState).replace(
+    /</g,
+    '\\u003c'
+  )}
+        </script>
+        <script src="${mainBuild}" type="text/javascript"></script>
+      </body>
+    </html>
+  `;
 };
 
 const renderApp = (req, res) => {
@@ -72,11 +73,13 @@ const renderApp = (req, res) => {
       <StaticRouter location={req.url} context={{}}>
         {renderRoutes(serverRoutes)}
       </StaticRouter>
-    </Provider>,
+    </Provider>
   );
 
   res.send(setResponse(html, preloadedState, req.hashManifest));
 };
+
+app.get('/api*', (req, res) => res.send({ foo: 'bar' }));
 
 app.get('*', renderApp);
 
