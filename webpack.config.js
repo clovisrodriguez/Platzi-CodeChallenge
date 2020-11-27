@@ -7,11 +7,13 @@ const ManifestPlugin = require('webpack-manifest-plugin');
 
 require('dotenv').config();
 
-const isDev = (process.env.ENV === 'development');
+const isDev = process.env.ENV === 'development';
 const entry = ['./src/frontend/index.js'];
 
 if (isDev) {
-  entry.push('webpack-hot-middleware/client?path=/__webpack_hmr&timeout=2000&reload=true');
+  entry.push(
+    'webpack-hot-middleware/client?path=/__webpack_hmr&timeout=2000&reload=true'
+  );
 }
 
 module.exports = {
@@ -20,11 +22,54 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'src/server/public'),
     filename: isDev ? 'assets/app.js' : 'assets/app-[hash].js',
-    publicPath: '/',
+    publicPath: '/'
   },
   resolve: {
-    extensions: ['.js', '.jsx'],
+    extensions: ['.js', '.jsx']
   },
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      },
+      {
+        test: /\.styl$/,
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader
+          },
+          'css-loader',
+          'stylus-loader' // compiles Stylus to CSS
+        ]
+      },
+      {
+        test: /\.(png|gif|jpg)$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: 'assets/[hash].[ext]'
+            }
+          }
+        ]
+      }
+    ]
+  },
+  devServer: {
+    historyApiFallback: true
+  },
+  plugins: [
+    isDev ? new webpack.HotModuleReplacementPlugin() : () => {},
+    isDev ? () => {} : new CompressionWebpackPlugin({ test: /\.js$|\.css$/ }),
+    isDev ? () => {} : new ManifestPlugin(),
+    new MiniCssExtractPlugin({
+      filename: isDev ? 'assets/app.css' : 'assets/app-[hash].css'
+    })
+  ],
   optimization: {
     minimize: true,
     minimizer: [new TerserPlugin()],
@@ -41,65 +86,13 @@ module.exports = {
           enforce: true,
           test(module, chunks) {
             const name = module.nameForCondition && module.nameForCondition();
-            return chunks.some(chunk => chunk.name !== 'vendors' && /[\\/]node_modules[\\/]/.test(name));
-          },
-        },
-      },
-    },
-  },
-  module: {
-    rules: [
-      {
-        enforce: 'pre',
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        loader: 'eslint-loader',
-      },
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: {
-          loader: "babel-loader",
-        }
-      },
-      {
-        test: /\.(s*)css$/,
-        use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-          },
-          'css-loader',
-          'sass-loader'
-        ]
-      },
-      {
-        test: /\.(png|gif|jpg)$/,
-        use: [
-          {
-            'loader': 'file-loader',
-            options: {
-              name: 'assets/[hash].[ext]'
-            }
+            return chunks.some(
+              (chunk) =>
+                chunk.name !== 'vendors' && /[\\/]node_modules[\\/]/.test(name)
+            );
           }
-        ]
+        }
       }
-    ]
-  },
-  devServer: {
-    historyApiFallback: true,
-  },
-  plugins: [
-    isDev ? new webpack.HotModuleReplacementPlugin() :
-      () => { },
-    isDev ? () => { } :
-      new CompressionWebpackPlugin({
-        test: /\.js$|\.css$/,
-        filename: '[path].gz',
-      }),
-    isDev ? () => { } :
-      new ManifestPlugin(),
-    new MiniCssExtractPlugin({
-      filename: isDev ? 'assets/app.css' : 'assets/app-[hash].css',
-    }),
-  ],
+    }
+  }
 };

@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { createStore, compose } from 'redux';
 import { Router } from 'react-router';
 import { createBrowserHistory } from 'history';
-import reducer from './reducers';
+import reducer from './state/reducers';
 import App from './routes/App';
 
 const history = createBrowserHistory();
@@ -20,5 +20,5 @@ ReactDOM.hydrate(
       <App />
     </Router>
   </Provider>,
-  document.getElementById('app'),
+  document.getElementById('app')
 );

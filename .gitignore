@@ -79,3 +79,5 @@ src/server/public
 
 nextjs/node_modules
 .next
+
+src/server/public
