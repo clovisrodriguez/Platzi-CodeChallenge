@@ -9,14 +9,14 @@ import { Provider } from 'react-redux';
 import { createStore } from 'redux';
 import { renderRoutes } from 'react-router-config';
 import { StaticRouter } from 'react-router-dom';
-import reducer from '../frontend/reducers';
-import initialState from '../frontend/initialState';
+import axios from 'axios';
+import reducer from '../frontend/state/reducers';
 import serverRoutes from '../frontend/routes/serverRoutes';
 import getManifest from './getManifest';
 
 dotenv.config();
 
-const { ENV, PORT } = process.env;
+const { ENV, PORT, API } = process.env;
 const app = express();
 
 if (ENV === 'development') {
@@ -43,30 +43,48 @@ if (ENV === 'development') {
 const setResponse = (html, preloadedState, manifest) => {
   const mainStyles = manifest ? manifest['main.css'] : 'assets/app.css';
   const mainBuild = manifest ? manifest['main.js'] : 'assets/app.js';
+  const vendorBuild = manifest ? manifest['vendors.js'] : 'assets/vendor.js';
 
   return `
   <!DOCTYPE html>
     <html>
       <head>
         <link rel="stylesheet" href="${mainStyles}" type="text/css">
-        <title>Platzi Video</title>
+        <title>Clovis Store</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin="anonymous" />
+        <meta name="viewport" content="width=device-width, user-scalable=1">
       </head>
       <body>
         <div id="app">${html}</div>
         <script>
         window.__PRELOADED_STATE__ = ${JSON.stringify(preloadedState).replace(
-    /</g,
-    '\\u003c'
-  )}
+          /</g,
+          '\\u003c'
+        )}
         </script>
         <script src="${mainBuild}" type="text/javascript"></script>
+        </script>
+        <script src="${vendorBuild}" type="text/javascript"></script>
       </body>
     </html>
   `;
 };
 
-const renderApp = (req, res) => {
-  const store = createStore(reducer, initialState);
+const renderApp = async (req, res) => {
+  const { data } = await axios.get(API);
+  const getCategories = (data) => {
+    const categories = [];
+    data.forEach(({ category }) => {
+      categories.findIndex((val) => val === category) === -1 &&
+        categories.push(category);
+    });
+    return categories;
+  };
+  const store = createStore(reducer, {
+    products: data,
+    filterProducts: data,
+    categories: getCategories(data)
+  });
   const preloadedState = store.getState();
   const html = renderToString(
     <Provider store={store}>
@@ -78,8 +96,6 @@ const renderApp = (req, res) => {
 
   res.send(setResponse(html, preloadedState, req.hashManifest));
 };
-
-app.get('/api*', (req, res) => res.send({ foo: 'bar' }));
 
 app.get('*', renderApp);
 
